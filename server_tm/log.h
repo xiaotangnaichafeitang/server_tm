@@ -12,10 +12,19 @@
 namespace server_tm {
     // 日志事件
     class LogEvent {
+
     public:
         typedef std::shared_ptr<LogEvent> ptr;
 
         LogEvent();
+
+        const char* getFile() const { return m_file; }
+        int32_t getLine() const { return m_line; }
+        uint32_t getElapse() const { return m_elapse; }
+        uint32_t getThreadId() const { return m_threadId; }
+        uint32_t getFiberId() const { return m_fiberId; }
+        uint64_t getTime() const { return m_time; }
+        std::string getContent() const { return m_content; }
 
     private:
         const char *m_file = nullptr;   //文件名
@@ -32,6 +41,7 @@ namespace server_tm {
     public:
 
         enum Level {
+            UNKNOW = 0,
             DEBUG = 1,
             INFO = 2,
             WARN = 3,
@@ -40,6 +50,7 @@ namespace server_tm {
         };
     };
 
+        static const char* toString(LogLevel::Level level);
     // 日志格式器
     class LogFormatter {
 
@@ -58,7 +69,7 @@ namespace server_tm {
 
             virtual ~FormatItem() {}
 
-            virtual  void  format(std::ostream os, LogEvent::ptr event) = 0;
+            virtual  void  format(std::ostream os,LogLevel::Level level,  LogEvent::ptr event) = 0;
         };
 
         void init();
