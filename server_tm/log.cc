@@ -2,6 +2,9 @@
 #include <iostream>
 #include <map>
 #include <functional>
+#include <time.h>
+#include <string.h>
+#include <ctime>
 
 
 namespace server_tm {
@@ -80,12 +83,22 @@ namespace server_tm {
 
 	class DateTimeFormatItem : public LogFormatter::FormatItem {
 	public:
-		DateTimeFormatItem(const std::string& format = "%Y-%m:%d %H:%M:%S")
+		DateTimeFormatItem(const std::string& format = "%Y-%m-%d %H:%M:%S")
 			: m_format(format) {
+			if (m_format.empty()) {
+				m_format = "%Y-%m-%d %H:%M:%S";
+			}
+			
 		}
 
 		void format(std::ostream& os, Logger::ptr logger, LogLevel::Level level, LogEvent::ptr event) override {
-			os << logger->getName();
+			struct tm tm;
+			time_t time = event->getTime();
+			localtime_r(&time, &tm);
+			char buf[64];
+			strftime(buf, sizeof(buf), m_format.c_str(), &tm);
+			os << buf;
+
 		}
 	private:std::string m_format;
 
@@ -141,7 +154,7 @@ namespace server_tm {
 	Logger::Logger(const std::string& name)
 		: m_name(name)
 		, m_level(LogLevel::DEBUG) {
-		m_formatter.reset(new LogFormatter("%d [%p] %f:%l %n"));
+		m_formatter.reset(new LogFormatter("%d [%p] <%f:%l>     %m %n"));
 	}
 
 	void Logger::addAppender(LogAppender::ptr appender) {
@@ -211,7 +224,8 @@ namespace server_tm {
 
 	void StdoutLogAppender::log(std::shared_ptr<Logger> logger, LogLevel::Level level, LogEvent::ptr event) {
 		if (level >= m_level) {
-			std::cout << m_formatter->format(logger, level, event);
+			std::string str = m_formatter->format(logger, level, event);
+			std::cout << str << "******" << std::endl;
 		}
 	}
 
@@ -255,7 +269,7 @@ namespace server_tm {
 			std::string fmt;
 
 			while (n < m_pattern.size()) {
-				if (isspace(m_pattern[n])) {
+				if (!isalpha(m_pattern[n]) && m_pattern[n] != '{' && m_pattern[n] != '}') {
 					break;
 				}
 				if (fmt_status == 0) {
@@ -283,7 +297,7 @@ namespace server_tm {
 				}
 				str = m_pattern.substr(i + 1, n - i - 1);
 				vec.push_back(std::make_tuple(str, fmt, 1));
-				i = n;
+				i = n - 1;
 			}
 			else if (fmt_status == 1) {
 				std::cout << "pattern parse error: " << m_pattern << " - " << m_pattern.substr(i) << std::endl;
@@ -294,7 +308,7 @@ namespace server_tm {
 					vec.push_back(std::make_tuple(nstr, "", 0));
 				}
 				vec.push_back(std::make_tuple(str, fmt, 1));
-				i = n;
+				i = n - 1;
 			}
 		}
 
@@ -317,7 +331,7 @@ namespace server_tm {
 	#undef XX
 
 		};
-		
+
 
 		for (auto& i : vec) {
 			if (std::get<2>(i) == 0) {
@@ -327,12 +341,14 @@ namespace server_tm {
 				auto it = s_format_items.find(std::get<0>(i));
 				if (it == s_format_items.end()) {
 					m_items.push_back(FormatItem::ptr(new StringFormatItem("<<error_format %" + std::get<0>(i) + ">>")));
-				}else
+				}
+				else
 				{
 					m_items.push_back(it->second(std::get<1>(i)));
 				}
 			}
-			std::cout << std::get<0>(i) << " - " << std::get<1>(i) << " - " << std::get<2>(i) << std::endl;
+			std::cout << "(" << std::get<0>(i) << " ) - ( " << std::get<1>(i) << " ) - ( " << std::get<2>(i) << ")" << std::endl;
 		}
+		std::cout << m_items.size() << std::endl;
 	}
 };
