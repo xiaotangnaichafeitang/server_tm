@@ -76,6 +76,8 @@ namespace server_tm {
 		}
 	};
 
+	
+
 	class DateTimeFormatItem : public LogFormatter::FormatItem {
 	public:
 		DateTimeFormatItem(const std::string& format = "%Y-%m:%d %H:%M:%S")

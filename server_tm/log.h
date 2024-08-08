@@ -11,6 +11,7 @@
 
 namespace server_tm {
     // 日志事件
+    class Logger;
     class LogEvent {
 
     public:
